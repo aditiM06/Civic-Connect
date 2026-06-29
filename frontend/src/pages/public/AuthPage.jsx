@@ -9,20 +9,86 @@ import {
   faLocationDot,
 } from "@fortawesome/free-solid-svg-icons";
 
+import {
+  loginUser,
+  signupUser,
+  demoLoginUser,
+} from "../../api/authApi";
+
 function AuthPage() {
   const [isSignup, setIsSignup] = useState(false);
+  const [loginForm, setLoginForm] = useState({
+    email: "",
+    password: "",
+  });
+
+  const [signupForm, setSignupForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+  });
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const navigate = useNavigate();
 
-  function handleDemoLogin() {
-    navigate("/citizen");
+  function saveAuthData(data) {
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("user", JSON.stringify(data.user));
   }
 
-  function handleSubmit(event) {
+  async function handleDemoLogin() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await demoLoginUser();
+
+      saveAuthData(data);
+      navigate("/citizen");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleLoginSubmit(event) {
     event.preventDefault();
 
-    // TEMPORARY:
-    // Real login/signup will be connected after backend APIs are ready.
-    navigate("/citizen");
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await loginUser(loginForm);
+
+      saveAuthData(data);
+      navigate("/citizen");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleSignupSubmit(event) {
+    event.preventDefault();
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await signupUser(signupForm);
+
+      saveAuthData(data);
+      navigate("/citizen");
+    } catch (error) {
+      setError(error.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -70,13 +136,19 @@ function AuthPage() {
               <span className="text-xl font-bold">CivicConnect</span>
             </Link>
 
+            {error && (
+              <div className="mb-4 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                {error}
+              </div>
+            )}
+
             {/* Flip Card Wrapper */}
             <div className="[perspective:1200px]">
               <div
-  className={`relative min-h-[620px] transition-transform duration-500 [transform-style:preserve-3d] ${
-    isSignup ? "[transform:rotateY(180deg)]" : ""
-  }`}
->
+                className={`relative min-h-[620px] transition-transform duration-500 [transform-style:preserve-3d] ${
+                  isSignup ? "[transform:rotateY(180deg)]" : ""
+                }`}
+              >
                 {/* Login Card */}
                 <div className="absolute inset-0 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-7 shadow-sm [backface-visibility:hidden]">
                   <div>
@@ -89,7 +161,7 @@ function AuthPage() {
                     </p>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                  <form onSubmit={handleLoginSubmit} className="mt-8 space-y-5">
                     <div>
                       <label className="mb-2 block text-sm font-bold text-slate-700">
                         Email
@@ -99,6 +171,13 @@ function AuthPage() {
                         <input
                           type="email"
                           placeholder="you@example.com"
+                          value={loginForm.email}
+                          onChange={(event) =>
+                            setLoginForm({
+                              ...loginForm,
+                              email: event.target.value,
+                            })
+                          }
                           className="w-full rounded-2xl border border-slate-300 px-4 py-3 pl-11 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                         />
 
@@ -118,6 +197,13 @@ function AuthPage() {
                         <input
                           type="password"
                           placeholder="Enter your password"
+                          value={loginForm.password}
+                          onChange={(event) =>
+                            setLoginForm({
+                              ...loginForm,
+                              password: event.target.value,
+                            })
+                          }
                           className="w-full rounded-2xl border border-slate-300 px-4 py-3 pl-11 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                         />
 
@@ -130,9 +216,10 @@ function AuthPage() {
 
                     <button
                       type="submit"
-                      className="flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-4 text-sm font-bold text-white transition hover:bg-blue-700"
+                      disabled={loading}
+                      className="flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                     >
-                      Login
+                      {loading ? "Please wait..." : "Login"}
                       <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
                     </button>
                   </form>
@@ -140,7 +227,8 @@ function AuthPage() {
                   <button
                     type="button"
                     onClick={handleDemoLogin}
-                    className="mt-4 w-full rounded-2xl border border-slate-300 px-5 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                    disabled={loading}
+                    className="mt-4 w-full rounded-2xl border border-slate-300 px-5 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Login as Demo User
                   </button>
@@ -149,7 +237,10 @@ function AuthPage() {
                     Don&apos;t have an account?{" "}
                     <button
                       type="button"
-                      onClick={() => setIsSignup(true)}
+                      onClick={() => {
+                        setError("");
+                        setIsSignup(true);
+                      }}
                       className="font-bold text-blue-600 hover:text-blue-700"
                     >
                       Sign up
@@ -169,7 +260,10 @@ function AuthPage() {
                     </p>
                   </div>
 
-                  <form onSubmit={handleSubmit} className="mt-4 space-y-5">
+                  <form
+                    onSubmit={handleSignupSubmit}
+                    className="mt-4 space-y-5"
+                  >
                     <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                       <div>
                         <label className="mb-2 block text-sm font-bold text-slate-700">
@@ -180,6 +274,13 @@ function AuthPage() {
                           <input
                             type="text"
                             placeholder="First Name"
+                            value={signupForm.firstName}
+                            onChange={(event) =>
+                              setSignupForm({
+                                ...signupForm,
+                                firstName: event.target.value,
+                              })
+                            }
                             className="w-full rounded-2xl border border-slate-300 px-4 py-3 pl-11 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                           />
 
@@ -198,6 +299,13 @@ function AuthPage() {
                         <input
                           type="text"
                           placeholder="Last Name"
+                          value={signupForm.lastName}
+                          onChange={(event) =>
+                            setSignupForm({
+                              ...signupForm,
+                              lastName: event.target.value,
+                            })
+                          }
                           className="w-full rounded-2xl border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                         />
                       </div>
@@ -212,6 +320,13 @@ function AuthPage() {
                         <input
                           type="email"
                           placeholder="you@example.com"
+                          value={signupForm.email}
+                          onChange={(event) =>
+                            setSignupForm({
+                              ...signupForm,
+                              email: event.target.value,
+                            })
+                          }
                           className="w-full rounded-2xl border border-slate-300 px-4 py-3 pl-11 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                         />
 
@@ -231,6 +346,13 @@ function AuthPage() {
                         <input
                           type="password"
                           placeholder="Create a password"
+                          value={signupForm.password}
+                          onChange={(event) =>
+                            setSignupForm({
+                              ...signupForm,
+                              password: event.target.value,
+                            })
+                          }
                           className="w-full rounded-2xl border border-slate-300 px-4 py-3 pl-11 outline-none transition focus:border-blue-500 focus:ring-4 focus:ring-blue-100"
                         />
 
@@ -243,9 +365,10 @@ function AuthPage() {
 
                     <button
                       type="submit"
-                      className="flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-4 text-sm font-bold text-white transition hover:bg-blue-700"
+                      disabled={loading}
+                      className="flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-4 text-sm font-bold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
                     >
-                      Sign Up
+                      {loading ? "Please wait..." : "Sign Up"}
                       <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
                     </button>
                   </form>
@@ -253,7 +376,8 @@ function AuthPage() {
                   <button
                     type="button"
                     onClick={handleDemoLogin}
-                    className="mt-4 w-full rounded-2xl border border-slate-300 px-5 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100"
+                    disabled={loading}
+                    className="mt-4 w-full rounded-2xl border border-slate-300 px-5 py-4 text-sm font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     Continue as Demo User
                   </button>
@@ -262,7 +386,10 @@ function AuthPage() {
                     Already have an account?{" "}
                     <button
                       type="button"
-                      onClick={() => setIsSignup(false)}
+                      onClick={() => {
+                        setError("");
+                        setIsSignup(false);
+                      }}
                       className="font-bold text-blue-600 hover:text-blue-700"
                     >
                       Login
