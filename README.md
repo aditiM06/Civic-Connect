@@ -306,6 +306,6 @@ AI is used as a development accelerator and product feature, but every major arc
 
 ## Author
 
-**Aditi Mule**
+**Aditi Muley**
 
 Computer Science student building real-world, resume-worthy full-stack projects with a focus on practical problem solving, clean architecture, and AI-assisted development.
