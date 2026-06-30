@@ -1,4 +1,4 @@
-import { Link, NavLink } from "react-router";
+import { Link, NavLink, useNavigate } from "react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faLocationDot,
@@ -12,6 +12,19 @@ function Sidebar({
   isOpen,
   onClose,
 }) {
+
+  const navigate = useNavigate();
+
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    if (onClose) {
+      onClose();
+    }
+    navigate("/auth", { replace: true });
+}
+
+
   return (
     <>
       {/* Overlay */}
@@ -90,9 +103,13 @@ function Sidebar({
         </nav>
 
         {/* Logout */}
-        <button className="mt-6 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100">
-          Logout
-        </button>
+        <button
+  type="button"
+  onClick={handleLogout}
+  className="mt-6 rounded-xl border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+>
+  Logout
+</button>
       </aside>
     </>
   );

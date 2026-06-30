@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router";
 import LandingPage from "./pages/public/LandingPage";
 import Footer from "./components/layout/Footer";
 import AuthPage from "./pages/public/AuthPage";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
 
 {/* Citizen Imports */}
 import CitizenLayout from "./components/layout/CitizenLayout";
@@ -28,7 +29,11 @@ function App() {
         <Route path="/auth" element={<AuthPage />} />
 
         {/* Citizen Routes */}
-        <Route path="/citizen" element={<CitizenLayout />}>
+        <Route path="/citizen" element={
+            <ProtectedRoute>
+              <CitizenLayout />
+            </ProtectedRoute>
+          }>
           <Route index element={<CitizenDashboard />} />
           <Route path="dashboard" element={<CitizenDashboard />} />
           <Route path="report" element={<Report />} />
