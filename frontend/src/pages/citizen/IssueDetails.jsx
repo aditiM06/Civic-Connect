@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -13,56 +14,7 @@ import {
   faWandMagicSparkles,
 } from "@fortawesome/free-solid-svg-icons";
 
-const issueDetails = {
-  1: {
-    id: 1,
-    title: "Large pothole near main road junction",
-    category: "Road Damage",
-    location: "Vijay Nagar, Sector 3",
-    status: "Reported",
-    severity: "High",
-    date: "12 Jan 2026",
-    upvotes: 24,
-    comments: 6,
-    priorityScore: 87,
-    description:
-      "A large pothole has formed near the main road junction. It is causing traffic slowdown and may be dangerous for two-wheelers during evening hours.",
-    aiSummary:
-      "AI detected a high-severity road damage issue. Suggested category: Road Damage. Recommended priority: High.",
-  },
-  2: {
-    id: 2,
-    title: "Garbage accumulation near public park",
-    category: "Garbage",
-    location: "Scheme 54, Indore",
-    status: "In Progress",
-    severity: "Medium",
-    date: "10 Jan 2026",
-    upvotes: 18,
-    comments: 4,
-    priorityScore: 64,
-    description:
-      "Garbage has been accumulating near the public park entrance for several days. It is creating smell and hygiene concerns for nearby residents.",
-    aiSummary:
-      "AI detected a medium-severity sanitation issue. Suggested category: Garbage. Recommended priority: Medium.",
-  },
-  3: {
-    id: 3,
-    title: "Broken street light near residential lane",
-    category: "Street Light",
-    location: "Palasia Main Road",
-    status: "Resolved",
-    severity: "Low",
-    date: "08 Jan 2026",
-    upvotes: 9,
-    comments: 2,
-    priorityScore: 38,
-    description:
-      "A street light near the residential lane was not working, creating visibility problems at night.",
-    aiSummary:
-      "AI detected a low-severity public lighting issue. Suggested category: Street Light. Recommended priority: Low.",
-  },
-};
+import { getReportById } from "../../api/reportApi";
 
 const statusSteps = [
   "Reported",
@@ -109,9 +61,64 @@ function getStatusIcon(status) {
   return faTriangleExclamation;
 }
 
+function formatDate(dateString) {
+  if (!dateString) return "Not available";
+
+  return new Date(dateString).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 function IssueDetails() {
   const { id } = useParams();
-  const issue = issueDetails[id] || issueDetails[1];
+
+  const [issue, setIssue] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    async function fetchIssueDetails() {
+      try {
+        setLoading(true);
+        setError("");
+
+        const data = await getReportById(id);
+        setIssue(data.report);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchIssueDetails();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
+        Loading issue details...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-6 text-red-700 shadow-sm">
+        {error}
+      </div>
+    );
+  }
+
+  if (!issue) {
+    return (
+      <div className="rounded-3xl border border-slate-200 bg-white p-6 text-slate-600 shadow-sm">
+        Issue not found.
+      </div>
+    );
+  }
 
   const currentStepIndex = statusSteps.indexOf(issue.status);
 
@@ -139,7 +146,10 @@ function IssueDetails() {
                   issue.status
                 )}`}
               >
-                <FontAwesomeIcon icon={getStatusIcon(issue.status)} className="mr-1" />
+                <FontAwesomeIcon
+                  icon={getStatusIcon(issue.status)}
+                  className="mr-1"
+                />
                 {issue.status}
               </span>
             </div>
@@ -154,18 +164,23 @@ function IssueDetails() {
                   icon={faLocationDot}
                   className="mr-2 text-blue-500"
                 />
-                {issue.location}
+                {issue.locationText}
               </span>
 
               <span>
-                <FontAwesomeIcon icon={faClock} className="mr-2 text-slate-400" />
-                Reported on {issue.date}
+                <FontAwesomeIcon
+                  icon={faClock}
+                  className="mr-2 text-slate-400"
+                />
+                Reported on {formatDate(issue.createdAt)}
               </span>
             </div>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
-            <p className="text-sm font-medium text-slate-500">Priority Score</p>
+            <p className="text-sm font-medium text-slate-500">
+              Priority Score
+            </p>
             <p className="mt-1 text-3xl font-bold text-slate-900">
               {issue.priorityScore}
             </p>
@@ -181,9 +196,17 @@ function IssueDetails() {
           <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-lg font-bold text-slate-900">Issue Photo</h2>
 
-            <div className="mt-4 flex h-72 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-              Uploaded issue image will appear here
-            </div>
+            {issue.imageUrl ? (
+              <img
+                src={issue.imageUrl}
+                alt={issue.title}
+                className="mt-4 h-72 w-full rounded-2xl object-cover"
+              />
+            ) : (
+              <div className="mt-4 flex h-72 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
+                No image uploaded yet
+              </div>
+            )}
           </section>
 
           {/* Description */}
@@ -191,7 +214,7 @@ function IssueDetails() {
             <h2 className="text-lg font-bold text-slate-900">Description</h2>
 
             <p className="mt-3 leading-7 text-slate-600">
-              {issue.description}
+              {issue.description || "No description provided."}
             </p>
           </section>
 
@@ -247,7 +270,9 @@ function IssueDetails() {
             <div className="mt-5 space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-500">Severity</span>
-                <span className={`font-bold ${getSeverityStyle(issue.severity)}`}>
+                <span
+                  className={`font-bold ${getSeverityStyle(issue.severity)}`}
+                >
                   {issue.severity}
                 </span>
               </div>
@@ -255,8 +280,11 @@ function IssueDetails() {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-500">Upvotes</span>
                 <span className="font-bold text-slate-900">
-                  <FontAwesomeIcon icon={faThumbsUp} className="mr-2 text-blue-500" />
-                  {issue.upvotes}
+                  <FontAwesomeIcon
+                    icon={faThumbsUp}
+                    className="mr-2 text-blue-500"
+                  />
+                  {issue.upvotesCount}
                 </span>
               </div>
 
@@ -267,7 +295,7 @@ function IssueDetails() {
                     icon={faCommentDots}
                     className="mr-2 text-slate-400"
                   />
-                  {issue.comments}
+                  {issue.commentsCount}
                 </span>
               </div>
             </div>
@@ -283,7 +311,8 @@ function IssueDetails() {
             </h2>
 
             <p className="mt-3 text-sm leading-6 text-slate-600">
-              {issue.aiSummary}
+              {issue.aiSummary ||
+                "AI summary will be generated after AI assistant integration."}
             </p>
           </section>
 
